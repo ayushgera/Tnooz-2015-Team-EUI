@@ -32,7 +32,7 @@ var app = {
     // Update DOM on a Received Event
     receivedEvent: function() {
 		 //asynchronous call to load map
-		 initMap();
+		 initApp();
 		 //tiles api
 		 // any other api
     }
