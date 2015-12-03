@@ -26,26 +26,14 @@ var app = {
     // Bind any events that are required on startup. Common events are:
     // 'load', 'deviceready', 'offline', and 'online'.
     bindEvents: function() {
-        document.addEventListener('deviceready', app.receivedEvent, false);
-		//app.receivedEvent();
+        //document.addEventListener('deviceready', app.receivedEvent, false);
+		app.receivedEvent();
     },
     // Update DOM on a Received Event
     receivedEvent: function() {
-		 navigator.geolocation.getCurrentPosition(app.onSuccess, app.onError);
-    },
-	onSuccess: function(position){
-		var myLatLng= new google.maps.LatLng(position.coords.latitude,position.coords.longitude);
-		var mapOptions={
-			center: myLatLng,
-			zoom:16,
-			mapTypeId: google.maps.MapTypeId.ROADMAP
-		};
-		
-		var map = new google.maps.Map(document.getElementById('map'), mapOptions);
-		var marker = new google.maps.Marker({
-			position: myLatLng,
-			map: map,
-			title: 'You Are Here'
-		});
-	}
+		 //asynchronous call to load map
+		 initMap();
+		 //tiles api
+		 // any other api
+    }
 };
