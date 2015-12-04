@@ -1,48 +1,66 @@
-var inputToAlgorithm=[];
-
+//var inputToAlgorithm=[];
+/**
+ * Structure of the input
+ * INPUTS.inputToAlgorithm[4][5] = {fromPlaceId, toPlaceId, distance, duration}
+ * origin= 4, destination =5 --> use placeIdMap variable to map this id with actual place ID i.e placeIdMap["ChIJazhtdOxv5kcRqV9clsepEIc"]= 4
+ * for example: INPUTS.inputToAlgorithm[placeIdMap["ChIJazhtdOxv5kcRqV9clsepEIc"]][placeIdMap["ChIJ1fXA1ERu5kcRcIbgA4VK1H0"]] = {distance: 2134, duration: 23}
+ **/
+var INPUTS={};
+INPUTS.inputToAlgorithm=[]; //contains 2D array to be provided as input to the main algorithm
+INPUTS.size=0; // size of the 2d array
 /**
  * Function to generate all distances between all places which is input to the main algorithm.
  * This also calls the main algorithm.
  **/
 function distanceCalculator(data){
-	var queryString="";
-	for(var i=0;i<data.length;i++){
-		queryString+=data[i].latitude+","+data[i].longitude;
-		if(i!=data.length-1){
-			queryString+="|";
+	var queryStrings=[];
+	var numDecaSets=Math.floor(data.length/10); //number of groups of 10
+	var remainderCount=data.length%10; //number of remaining elements outside of decasets
+	var numCallbacks=0;
+	for(;numCallbacks<numDecaSets;numCallbacks++){
+		var queryString="";
+		for(var j=0;j<10;j++){
+			queryString+=data[10*numCallbacks+j].latitude+","+data[10*numCallbacks+j].longitude;
+			if(j!=9){
+				queryString+="|";
+			}
 		}
+		queryStrings[numCallbacks]=queryString;
 	}
-	$.ajax({url: "https://maps.googleapis.com/maps/api/distancematrix/json?origins="+queryString+"&destinations="+queryString+"&key=AIzaSyBBtEG2tfGCd_jKU-6SXWnCL1XQXLQsxzI", success: function(result){
-		//generate input
-        /**
+	if(remainderCount>0){
+		var queryString="";
+		for(var k=0;k<remainderCount;k++){
+			queryString+=data[10*numDecaSets+k].latitude+","+data[10*numDecaSets+k].longitude;
+			if(k!=remainderCount-1){
+				queryString+="|";
+			}
+		}
+		queryStrings[numCallbacks]=queryString;
+		numCallbacks++;
+	}
+	var requests=[];
+	for(var i=0;i<numCallbacks;i++){
+		requests.push($.ajax({url: "https://maps.googleapis.com/maps/api/distancematrix/json?origins="+queryStrings[i]+"&destinations="+queryStrings[i]+"&key=AIzaSyB8fWpP5-N1Eeve4EWIzGKtCOiyifEBtBg", success: function(result){
+		}}));
+	}
+	//deferred callbacks
+	$.when.apply($,requests).done(
+		function(){
+		/**
 		 * Structure of the input
-		 *  inputToAlgorithm = [{
-		 *		elements:[{distance: {text: "4.6 km", value: 4621}, 
-		 *				   duration: {text: "12 mins", value:743}
-		 *				 }]
-		 *	}]
-		 *
-		 * inputToAlgorithm is an array of objects , each object corresponds to origin
-		 * each origin object has a key elements, which is an array of destination objects, with distance and duration values
-		 *
-		 * For example, 3 places, A,B,C
-		 * inputToAlgorithm=[{elements:[{ distance, duration from A to A}--> A as destination,
-		 *								{ distance, duration from A to B}--> B as destination,
-		 *								{ distance, duration from A to C}--> C as destination]} --> for A as origin, 
-		 *					 {elements:[{ distance, duration from B to A}--> A as destination,
-		 *								{ distance, duration from B to B}--> B as destination,
-		 *								{ distance, duration from B to C}--> C as destination]} --> for B as origin,
-		 *					 {elements:[{ distance, duration from C to A}--> A as destination,
-		 *								{ distance, duration from C to B}--> B as destination,
-		 *								{ distance, duration from C to C}--> C as destination]} --> for C as origin]
+		 * INPUTS.inputToAlgorithm[4][5] = {fromPlaceId, toPlaceId, distance, duration}
+		 * origin= 4, destination =5 --> use placeIdMap variable to map this id with actual place ID i.e placeIdMap[4]= "ChIJazhtdOxv5kcRqV9clsepEIc"
 		 **/
-		inputToAlgorithm=result.rows;
+		//inputToAlgorithm=result.rows;
 		
-		
+		var x=0;
+		for(var i=0;i<arguments.length;i++){
+			generateInput(arguments[0].rows);
+		}
 		
 		/**
 		 ******************************************************************************************
-		 * TODO: Call Sathya's Algorithm, use "inputToAlgorithm" as input, the structure is defined above
+		 * TODO: Call Sathya's Algorithm, use "INPUTS.inputToAlgorithm" as input, the structure is defined above
 		 ******************************************************************************************
 		 **/
 		 
@@ -51,10 +69,27 @@ function distanceCalculator(data){
 		 * TODO: Output of Sathya's algorithm loads the images on the main page. The code comes here (call a function) 
 		 ******************************************************************************************
 		 **/
-		
-    }});
+	
+		});
 }
 
+function generateInput(distanceArray){
+	for(var i=0;i<distanceArray.length;i++){
+		//i --> from city
+		var destinations= distanceArray[i].elements;
+		INPUTS.inputToAlgorithm[INPUTS.size]=[];
+		for(var j=0;j<destinations.length;j++){
+			var inputObject={};
+			inputObject.fromPlaceId=data[i].placeId;
+			inputObject.toPlaceId=data[j].placeId;
+			inputObject.distance= destinations[j].distance.value;
+			inputObject.duration= destinations[j].duration.value;
+			//inputToAlgorithm.push(inputObject);
+			INPUTS.inputToAlgorithm[INPUTS.size].push(inputObject);
+		}
+		INPUTS.size++;
+	}
+}
 /**
  * To be used in description page,
  * Will give best possible routes to the selected place from the current location, and display on a map
